@@ -1,3 +1,5 @@
 This is a little Chromium extension that I created to help myself and others keep better track of their grades. Feel free to try it out! Simply download the files, and then on any Chromium browser (like Google Chrome, Microsoft Edge, etc.), turn on developer mode, click on load unpacked, and upload the folder that holds solely those files. Then click on the extension's icon in the extension bar, and it will take you to the main page. Everything else is pretty self-explanatory. Feel free to <b>contact meeeeee</b> if you run into any issues. It's not had too much testing outside of my computer but I've tried to make it as universal as possible. 
 
-This <b>DOES NOT</b> work on Schoology Plus yet.. but I'm working on it!
+This even works on <b>Schoology Plus!!!</b>
+
+Note: the "Assignment Exception Codes" box on the left is for the ten-digit assignment codes of any assignments you want to be ignored or blacklisted from the selection. Each code must be on its own line, separated by a line break. The one on the right is for the names of those assignments, so that you don't lose track of what they are.
