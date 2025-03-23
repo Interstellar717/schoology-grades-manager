@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "Schoology Tab Manager",
+    "description": "",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "tabs",
+        "tabGroups",
+        "storage"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "version": "1.0.0",
+    "background": {
+        "service_worker": "service-worker.js"
+    },
+    "action": {},
+    "icons": {
+        "256": "favicon.png"
+    }
+}
