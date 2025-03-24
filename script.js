@@ -40,9 +40,11 @@ chrome.storage.local.get(
 
 function listeners_set() {
     var listeners = {
-        "#missing": () => chrome.runtime.sendMessage({ type: "msg", value: "missing" }),
+        "#reset": () => {
+            chrome.runtime.sendMessage({ type: "msg", value: "missing" });
+            chrome.runtime.sendMessage({ type: "msg", value: "bad" });
+        },
         "#missingTabs": () => chrome.runtime.sendMessage({ type: "msg", value: "missingTabs" }),
-        "#bad": () => chrome.runtime.sendMessage({ type: "msg", value: "bad" }),
         "#badTabs": () => chrome.runtime.sendMessage({ type: "msg", value: "badTabs" }),
         "#deleteMissing": () => { delete_groups("missing") },
         "#deleteBad": () => { delete_groups("bad") }
@@ -50,6 +52,7 @@ function listeners_set() {
 
     for (let [k, v] of Object.entries(listeners)) {
         qs(k).addEventListener("click", v);
+        qs(k).style.cursor = "pointer";
     }
 }
 
@@ -387,10 +390,32 @@ function assignment_table_processing(table, id, listener = true) {
 
     if (id == "bad-container") {
         if (listener) {
-            qs("#bad").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "bad" }) })
+            /* qs("#reset").addEventListener('click', () => {
+                chrome.runtime.sendMessage({ type: "msg", value: "missing" });
+                chrome.runtime.sendMessage({ type: "msg", value: "bad" });
+            }) */
             qs("#badTabs").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "badTabs" }) })
             collapse_listeners("bad");
         }
+
+        setTimeout(() => {
+            for (let i of qsa('#bad-container li')) {
+                if (i.id) { // if it has a course id
+                    i.open = true;
+                    i.style = '';
+                    i.moved = 0;
+                }
+            }
+            // setTimeout(() => {
+            for (let i of qsa('#bad-container li')) {
+                if (i.id) { // if it has a course id
+                    // setTimeout(() => {
+                    i.click()
+                    // }, Array.from(qsa('#bad-container li')).indexOf(i) * 100);
+                }
+            }
+            // }, 2000);
+        }, 100);
 
         for (let i of qsa('#bad-container .open-all-btn')) {
             i.addEventListener('click', e => {
@@ -434,7 +459,10 @@ function submitted_table_processing(submitted, listener = true) {
     chrome.storage.local.set({ missing_submitted: submitted });
 
     if (listener) {
-        qs("#missing").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "missing" }) })
+        /* qs("#reset").addEventListener('click', () => {
+            chrome.runtime.sendMessage({ type: "msg", value: "missing" });
+            chrome.runtime.sendMessage({ type: "msg", value: "bad" });
+        }) */ // avoid double
         qs("#missingTabs").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "missingTabs" }) })
         collapse_listeners("missing");
     }

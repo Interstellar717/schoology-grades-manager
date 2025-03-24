@@ -17,6 +17,27 @@ chrome.storage.local.set({ missing: [] });
 chrome.storage.local.set({ missing_submitted: [] });
 chrome.storage.local.set({ bad: [] });
 
+function reset() {
+    links_missing = [];
+    links_bad = [];
+    courses_missing = [];
+    courses_bad = [];
+    names_missing = [];
+    names_bad = [];
+    submitted = [];
+    ids_missing = [];
+    ids_bad = [];
+    id_to_course = {};
+    course_table_missing = {}; // two tables needed because it is a separate function
+    course_table_bad = {};
+    assignment_table_missing = {};
+    assignment_table_bad = {};
+
+    chrome.storage.local.set({ missing: [] });
+    chrome.storage.local.set({ missing_submitted: [] });
+    chrome.storage.local.set({ bad: [] });
+}
+
 var mps = {
     1: "1083144",
     2: "1083145",
@@ -31,10 +52,12 @@ chrome.runtime.onMessage.addListener(function (data) {
         case "msg": {
             switch (data.value) {
                 case "missing": {
+                    reset();
                     missingGrades();
                 } break;
 
                 case "bad": {
+                    reset();
                     badGrades();
                 } break;
 
@@ -313,9 +336,11 @@ function badGrades() {
             },
             args: [mps, mp]
         });
-
+        var count = 0;
         var check_for_data = setInterval(() => {
-            if (links_bad) {
+            count += 100;
+
+            if (links_bad.length || count >= 5000) {
                 clearInterval(check_for_data);
 
                 // console.log(links_bad);
