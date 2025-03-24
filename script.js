@@ -53,14 +53,115 @@ function listeners_set() {
     }
 }
 
-window.onload = listeners_set;
+function collapse_listeners(category) {
+    var parent_li_missing = Array.from(document.querySelectorAll('#missing-container > ul > li'));
+    var parent_li_bad = Array.from(document.querySelectorAll('#bad-container > ul > li'));
+
+
+    if (category == "missing") {
+
+        for (let i of parent_li_missing) {
+            i.style.transform = "translateY(0px)";
+            i.open = true;
+            i.moved = 0;
+        }
+        for (let x = 0; x < parent_li_missing.length; x++) {
+            parent_li_missing[x].addEventListener('click', e => {
+                var ul = e.target.querySelector('ul');
+                if (e.target.open == true) {
+                    ul.style.opacity = "0";
+                    setTimeout(() => {
+                        for (let i of parent_li_missing) {
+
+                            if (parent_li_missing.indexOf(i) > parent_li_missing.indexOf(e.target)) {
+                                i.moved -= ul.clientHeight;
+                                i.style.transform = "translateY(" + i.moved + "px)";
+                            }
+                        }
+
+                    }, 300);
+                    e.target.open = false;
+                } else if (e.target.open == false) {
+                    for (let i of parent_li_missing) {
+
+                        if (parent_li_missing.indexOf(i) > parent_li_missing.indexOf(e.target)) {
+                            i.moved += ul.clientHeight;
+                            i.style.transform = "translateY(" + i.moved + "px)";
+                        }
+                    }
+                    setTimeout(() => {
+                        ul.style.opacity = "1";
+
+                    }, 300);
+                    e.target.open = true;
+                }
+            })
+        }
+    } else if (category == "bad") {
+
+        for (let i of parent_li_bad) {
+            i.style.transform = "translateY(0px)";
+            i.open = true;
+            i.moved = 0;
+        }
+        for (let x = 0; x < parent_li_bad.length; x++) {
+            parent_li_bad[x].addEventListener('click', e => {
+                var ul = e.target.querySelector('ul');
+                if (e.target.open == true) {
+                    ul.style.opacity = "0";
+                    e.target.querySelectorAll('a').forEach(i => {
+                        i.style.setProperty('pointer-events', 'none');
+                        i.style.setProperty('user-select', 'none');
+                    });
+
+
+                    setTimeout(() => {
+                        for (let i of parent_li_bad) {
+
+                            if (parent_li_bad.indexOf(i) > parent_li_bad.indexOf(e.target)) {
+                                i.moved -= ul.clientHeight;
+                                i.style.transform = "translateY(" + i.moved + "px)";
+                            }
+                        }
+
+                    }, 300);
+                    e.target.open = false;
+                } else if (e.target.open == false) {
+                    for (let i of parent_li_bad) {
+
+                        if (parent_li_bad.indexOf(i) > parent_li_bad.indexOf(e.target)) {
+                            e.target.className = "";
+                            i.moved += ul.clientHeight;
+                            i.style.transform = "translateY(" + i.moved + "px)";
+                        }
+                    }
+                    setTimeout(() => {
+                        ul.style.opacity = "1";
+                        e.target.querySelectorAll('a').forEach(i => {
+                            i.style.setProperty('pointer-events', '');
+                            i.style.setProperty('user-select', '');
+                        });
+                    }, 300);
+                    e.target.open = true;
+                }
+            })
+        }
+    }
+}
+
+window.onload = () => {
+    listeners_set();
+
+    collapse_listeners("missing");
+    collapse_listeners("bad");
+};
 
 
 chrome.runtime.onMessage.addListener(function (data) {
     switch (data.type) {
         case "data": {
             if (data.purpose == "create") {
-                createTabGroup(data.value, data.title + "(" + data.category[0].toUpperCase() + ")", undefined, data.category);
+                createTabGroup(data.value, data.title + " (" + data.category[0].toUpperCase() + ")", undefined, data.category);
             }
         } break;
         case "msg": {
@@ -100,6 +201,24 @@ chrome.runtime.onMessage.addListener(function (data) {
 
 
 async function createTabGroup(tabIds, groupTitle, groupColor, category) {
+
+    for (let i of groups_bad) {
+        chrome.tabs.query({ groupId: i }, function (tabs) {
+            if (!tabs.length) groups_bad.splice(groups_bad.indexOf(i), 1);
+        })
+    }
+
+    for (let i of groups_missing) {
+        chrome.tabs.query({ groupId: i }, function (tabs) {
+            if (!tabs.length) groups_missing.splice(groups_missing.indexOf(i), 1);
+        })
+    }
+    chrome.storage.local.set({ groupsMissing: groups_missing });
+    chrome.storage.local.set({ groupsBad: groups_bad });
+
+
+
+
     const groupId = await chrome.tabs.group({ tabIds: tabIds });
 
     await chrome.tabGroups.update(groupId, {
@@ -225,9 +344,16 @@ function assignment_table_processing(table, id, listener = true) {
 
     var ul = document.createElement("ul");
     for (let [k, v] of Object.entries(table)) {
+
         var inner = document.createElement('li');
         inner.id = k.replaceAll(" ", "_");
         inner.textContent = k;
+
+        var open_all_btn = document.createElement('a');
+        open_all_btn.className = "open-all-btn";
+        open_all_btn.textContent = "Open All";
+
+        inner.appendChild(open_all_btn);
         ul.appendChild(inner);
     }
 
@@ -257,23 +383,76 @@ function assignment_table_processing(table, id, listener = true) {
         chrome.storage.local.set({ bad: table });
     }
 
-    if (listener && id == "bad-container") {
-        qs("#bad").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "bad" }) })
-        qs("#badTabs").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "badTabs" }) })
+
+
+    if (id == "bad-container") {
+        if (listener) {
+            qs("#bad").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "bad" }) })
+            qs("#badTabs").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "badTabs" }) })
+            collapse_listeners("bad");
+        }
+
+        for (let i of qsa('#bad-container .open-all-btn')) {
+            i.addEventListener('click', e => {
+                var c = e.target.parentElement.textContent.split(e.target.textContent)[0].replaceAll("_", " ");
+                chrome.runtime.sendMessage({ type: "course-group", value: c, category: "bad" });
+            });
+            i.style.cursor = "pointer";
+        }
     }
+
+
+
 }
 
 function submitted_table_processing(submitted, listener = true) {
-    if (!submitted.length) return;
+
+    if (!submitted.length) {
+        for (let i of qsa('#missing-container .open-all-btn')) {
+
+            i.addEventListener('click', e => {
+                var c = e.target.parentElement.textContent.split(e.target.textContent)[0].replaceAll("_", " ");
+                chrome.runtime.sendMessage({ type: "course-group", value: c, category: "missing" });
+            });
+            i.style.cursor = "pointer";
+        }
+        return;
+    };
 
     qs('#missing-container ul').innerHTML += "<li id='submitted'>Submitted<ul></ul></li>";
     for (let i of submitted) {
-        qs('#submitted ul').innerHTML += "<li title='" + i[1] + "'><a target='_blank' href='" + i[0] + "'>" + i[2] + "</a></li>";
+        // qs('#submitted ul').innerHTML += "<li title='" + i[1] + "'><a target='_blank' href='" + i[0] + "'>" + i[2] + "</a></li>";
+        var li = document.createElement('li');
+        li.title = i[1];
+        var a = document.createElement('a');
+        a.target = "_blank";
+        a.href = i[0];
+        a.textContent = i[2];
+        li.appendChild(a);
+        qs('#submitted ul').appendChild(li);
     }
     chrome.storage.local.set({ missing_submitted: submitted });
 
     if (listener) {
         qs("#missing").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "missing" }) })
         qs("#missingTabs").addEventListener('click', () => { chrome.runtime.sendMessage({ type: "msg", value: "missingTabs" }) })
+        collapse_listeners("missing");
+    }
+
+    for (let i of qsa('#missing-container .open-all-btn')) {
+
+        i.addEventListener('click', e => {
+            var c = e.target.parentElement.textContent.split(e.target.textContent)[0].replaceAll("_", " ");
+            chrome.runtime.sendMessage({ type: "course-group", value: c, category: "missing" });
+        });
+        i.style.cursor = "pointer";
     }
 }
+
+chrome.tabGroups.onRemoved.addListener((group) => {
+    groups_bad.splice(groups_bad.indexOf(group.id), 1);
+    groups_missing.splice(groups_missing.indexOf(group.id), 1);
+
+    chrome.storage.local.set({ groupsMissing: groups_missing });
+    chrome.storage.local.set({ groupsBad: groups_bad });
+})

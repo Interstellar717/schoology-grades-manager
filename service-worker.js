@@ -13,6 +13,10 @@ var course_table_bad = {};
 var assignment_table_missing = {};
 var assignment_table_bad = {};
 
+chrome.storage.local.set({ missing: [] });
+chrome.storage.local.set({ missing_submitted: [] });
+chrome.storage.local.set({ bad: [] });
+
 var mps = {
     1: "1083144",
     2: "1083145",
@@ -67,11 +71,42 @@ chrome.runtime.onMessage.addListener(function (data) {
             names_bad = data.names;
         } break;
 
+        case "course-group": {
+
+            var c = data.value;
+            var course_links = [];
+            var course_group_ids = [];
+
+            if (data.category == "missing") {
+                for (let i in courses_missing) {
+                    if (courses_missing[i] == c) {
+                        course_links.push(links_missing[i]);
+                    }
+                }
+            } else if (data.category == "bad") {
+                for (let i in courses_bad) {
+                    if (courses_bad[i] == c) {
+                        course_links.push(links_bad[i]);
+                    }
+                }
+            } else console.log('error: data.category == ' + data.category);
+
+            for (let u of course_links) {
+                chrome.tabs.create({ url: u }, function (tab) {
+                    course_group_ids.push(tab.id);
+
+                    if (course_links.length == course_group_ids.length) {
+                        chrome.runtime.sendMessage({ type: "data", purpose: "create", value: course_group_ids, title: c, category: data.category });
+                    }
+                })
+            }
+        } break;
+
     }
 })
 
 function missingGrades() {
-    chrome.tabs.query({ url: "https://ocs.schoology.com/grades/grades" }, function (tabs) {
+    chrome.tabs.query({ url: "https://*.schoology.com/grades/grades" }, function (tabs) {
 
         var tab = tabs[0];
 
@@ -118,7 +153,7 @@ function missingGrades() {
                             || no_grade[i].parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.querySelector('div').textContent.split('Course')[0];
 
 
-                        name = no_grade[i].parentElement.parentElement.parentElement.querySelector(".title")?.textContent?.split("assignment")[0]?.split("assessment")[0];
+                        name = no_grade[i].parentElement.parentElement.parentElement.querySelector(".title")?.textContent?.split("assignment")[0]?.split("assessment")[0]?.split("external-tool-link")[0];
 
 
                         // add detect submitted feature
@@ -142,9 +177,10 @@ function missingGrades() {
                         if (
                             link &&
                             [
-                                "English 10",
+                                // "English 10",
                                 "HS Technology Student Association 24-25"
                             ].includes(course) == false &&
+                            !names_missing.includes(name) &&
                             !blacklisted &&
                             in_mp
                         ) {
@@ -228,20 +264,20 @@ function badGrades() {
                     var names_bad = [];
 
                     let grade = document.querySelectorAll('.report-row.item-row .awarded-grade');
-                    let total = document.querySelectorAll('.max-grade');
+                    // let total = document.querySelectorAll('.max-grade');
 
                     for (let i = 0; i < grade.length; i++) {
                         var link, course, name, in_mp;
 
                         let g = grade[i];
-                        let t = total[i];
+                        let t = g.parentElement.querySelector(".max-grade");
 
                         link = g.parentElement.parentElement.parentElement.querySelector('.title a')?.href;
                         course = g.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.querySelector('.gradebook-course-title a')?.textContent?.split('Course')[0];
                         course = course.split(':')[0].replaceAll('Advanced ', '').replaceAll('AP ', '').replaceAll('Honors ', '');;
                         name = g.parentElement.parentElement.parentElement.querySelector(".title")?.textContent
                             || g.parentElement.parentElement.parentElement.parentElement.querySelector(".title")?.textContent;
-                        name = name.split('assignment')[0].split('assessment')[0];
+                        name = name.split('assignment')[0].split('assessment')[0]?.split('external-tool-link')[0];
 
                         in_mp = g.parentElement.parentElement.parentElement.getAttribute('data-parent-id').split(mps[mp]).length > 1;
 
@@ -263,6 +299,7 @@ function badGrades() {
                             links_bad.push(link);
                             courses_bad.push(course);
                             names_bad.push(name);
+                            // console.log(name + ": " + g.textContent + " / " + t.textContent.split(" / ")[1] + " = " + (g.textContent / t.textContent.split(" / ")[1]), g, t);
                         }
 
                         if (i + 1 == grade.length) { //detect end of loop while still waiting for storage

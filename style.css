@@ -41,7 +41,7 @@ button:active {
 
 #assignment-exceptions,
 #assignment-names {
-    width: 75px;
+    width: 90px;
     height: 60%;
     background-color: rgba(255, 255, 255, 0.5);
     border: solid black 1px;
@@ -66,26 +66,32 @@ button:active {
 #missing-container {
     position: absolute;
     top: calc((100% - 85% - 60px) / 2);
-    left: calc((30% - 24% - 30px) / 2);
+    left: calc((30% - 25% - 30px) / 2);
     background: rgba(0, 0, 0, 0.5);
-    width: 24%;
+    width: 30%;
     height: 85%;
     font-size: 16px;
     color: white;
     padding: 30px;
+    overflow-y: scroll;
 }
 
 #bad-container {
     position: absolute;
     top: calc((100% - 85% - 60px) / 2);
-    right: calc((30% - 24% - 30px) / 2);
+    right: calc((30% - 25% - 30px) / 2);
     background: rgba(0, 0, 0, 0.5);
-    width: 24%;
+    width: 30%;
     height: 85%;
     font-size: 16px;
     color: white;
     padding: 30px;
+    overflow-y: scroll;
 }
+
+/* *::-webkit-scrollbar {
+    display: none;
+} */
 
 div a {
     color: rgb(15, 139, 148);
@@ -102,4 +108,26 @@ li {
 
 .header-inline button {
     transform: translateY(-5px);
+}
+
+.header-inline h1 {
+    font-size: 25px;
+}
+
+ul,
+li {
+    transition: 0.3s all;
+}
+
+/* .disabled * {
+    user-select: none;
+    pointer-events: none;
+} */
+
+.open-all-btn {
+    transform: translateX(10px);
+    position: absolute;
+    font-size: 15px;
+    color: orange;
+    text-decoration: underline;
 }
